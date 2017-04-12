@@ -1,53 +1,113 @@
-var firstCat = 0;
-
-//Hard coded cat list
-var cats2 = [
-        {"id": 1, "name": "Whiskers", "img": "img/cat1.jpg", "votes": 0},
+$(function(){
+    var model = {
+        //Holds the current cat
+        currentCat: null,
+        //Our array of cat objects
+        cats: [
+        {"id": 1, "name": "Whiskers", "img": "img/cat1.jpg", "votes": 12},
         {"id": 2, "name": "Chewie", "img": "img/cat2.jpg", "votes": 0},
         {"id": 3, "name": "Twins", "img": "img/cat3.jpg", "votes": 0},
         {"id": 4, "name": "Grumpy", "img": "img/cat4.jpg", "votes": 0},
-        {"id": 5, "name": "Shocker", "img": "img/cat5.jpg", "votes": 0},
-        ]
+        {"id": 5, "name": "Shocker", "img": "img/cat5.jpg", "votes": 0}]
+    };
 
-//Set up the initial settings
-$(document).ready(function() {
-    $("#first-cat-name").append("select cat")
-    $(".first-cat-clicks").empty().append("0");
-    console.log(cats2[0].name)
-});
+    var controller = {
+        init: function() {
+            //Set current cat as first one on list
+            model.currentCat = model.cats[0];
 
-//Append array to list
-$(document).ready(function() {
-    $.each(cats2, function( index, value ) {
-        $("#cat-list").append("<li class='cats'>" +
-            value.id + ". " + value.name + "</li>");
-    });
-});
+            //Initialize our views
+            ListView.init();
+            CatView.init();
+        },
+        //Returns our current cat
+        getCurrentCat: function () {
+            return model.currentCat;
+        },
+        //Returns our cat list
+        getCats: function () {
+            return model.cats;
+        },
+        // set the currently-selected cat to the object passed in
+        setCurrentCat: function(cat) {
+            model.currentCat = cat;
+        },
+        // increments the counter for the currently-selected cat
+        incrementCounter: function() {
+        model.currentCat.votes++;
+        CatView.render();
+        }
+    };
 
-//Based on choice, set the details
-$(document).ready(function() {
-    $( "#cat-list" ).on("click","li.cats", function(event) {
-        //Get the ID from selected cat
-        var title = $(this).text();
-        var id = parseInt(title);
-        //console.log(id)
+    var CatView = {
+        init: function() {
+            //Our cat name
+            this.CatName = document.getElementById('cat-name');
+            //Our cat pic
+            this.CatPic = document.getElementById('cat-pic');
+            //Our cat votes
+            this.CatVotes = document.getElementById('cat-votes');
 
-        //Find the matching object based on ID passed in
-        var result = $.grep(cats2, function(e){ return e.id == id; });
+            // on click, increment the current cat's counter
+            this.CatPic.addEventListener('click', function(){
+                controller.incrementCounter();
+            });
 
-        //Set the title
-        $("#first-cat-name").empty().append(result[0].name);
+            //Render the view
+            this.render()
+        },
+        render: function(){
+            //Get the current cat through the controller
+            var currentCat = controller.getCurrentCat();
+            this.CatName.textContent = currentCat.name;
+            this.CatPic.src = currentCat.img;
+            this.CatVotes.textContent = currentCat.votes;
+        }
+    };
 
-        //Set the votes
-        $(".first-cat-clicks").empty().append(result[0].votes);
+    var ListView = {
+        init: function() {
+            //Our cat list
+            this.CatList = document.getElementById('cat-list');
 
-        //Set the image
-        $('#first-cat-pic').attr('src',result[0].img);
+            //Render the view
+            this.render();
+        },
+        render: function(){
+            //Set up some variables
+            var i, elem, cat;
 
-        //Increase votes
-        $("#first-cat-pic").click(function(){
-            console.log("Cat name: " + result[0].name + ", This cats vote: " + result[0].votes++);
-            $(".first-cat-clicks").empty().append(result[0].votes);
-        });
-    });
+            //Set up where our list items will go
+            this.CatList.innerHTML = "";
+
+            //Grab our list of cat objects, meow...
+            var cats = controller.getCats()
+
+            //For each of those cats
+            for (i = 0; i < cats.length; i++) {
+                //Get the cat we are on in this iteration
+                cat = cats[i];
+
+                // make a new cat list item and set its text
+                elem = document.createElement('li');
+                elem.textContent = cat.name;
+
+                // on click, setCurrentCat and render the catView
+                // (this uses our closure-in-a-loop trick to connect the value
+                //  of the cat variable to the click event function)
+                elem.addEventListener('click', (function(catCopy) {
+                    return function() {
+                        controller.setCurrentCat(catCopy);
+                        CatView.render();
+                    };
+                })(cat));
+
+                // finally, add the element to the list
+                this.CatList.appendChild(elem);
+            }
+        }
+    };
+
+
+    controller.init();
 });
